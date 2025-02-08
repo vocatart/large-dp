@@ -1,0 +1,6 @@
+linguistic_path: ../linguistics
+languages:
+  - name: English
+    dictionaries:
+      - Dictionary1
+      - Dictionary2
