@@ -243,8 +243,6 @@ if __name__ == '__main__':
     with open(os.path.join(out_dir, "config.yaml"), 'w', encoding='utf-8') as f:
         yaml.dump(modified_config, f)
 
-    print(modified_config)
-
     print("Selecting validation data...")
     training_set, validation_set = create_dp_sets(languages, config_file)
 
