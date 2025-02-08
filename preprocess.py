@@ -4,6 +4,7 @@ import os.path
 import random
 import dp.preprocess
 from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 from tqdm import tqdm
 
 
@@ -14,7 +15,7 @@ def load_config(config_path: str) -> dict:
     :param config_path: Path to .yaml file.
     :return: YAML dictionary.
     """
-    yaml_loader = YAML()
+    yaml_loader = YAML(typ='rt')
     yaml_loader.default_flow_style = None
     yaml_loader.preserve_quotes = True
 
@@ -94,12 +95,12 @@ def collate_symbols(language_data: list[list[list[tuple[str, str, list[str]]] | 
         for entry in language[0]:
             graphemes_split = [grapheme for grapheme in str(entry[1])]
             grapheme_set.update(graphemes_split)
-            phoneme_set.update(str(entry[2]))
+            phoneme_set.update(entry[2])
 
     return grapheme_set, phoneme_set
 
 
-def create_dp_config(master_config: dict, loaded_graphemes: set, loaded_phonemes: set, all_langs: set, exp: str) -> dict:
+def create_dp_config(master_config: dict, loaded_graphemes: set, loaded_phonemes: set, all_langs: list[str], exp: str) -> dict:
     """
     Creates DeepPhonemizer configuration dictionary for given master configuration.
 
@@ -118,7 +119,7 @@ def create_dp_config(master_config: dict, loaded_graphemes: set, loaded_phonemes
     # add graphemes, phonemes, and languages
     preprocessing = config_copy['preprocessing']
     preprocessing.update(
-        {'text_symbols': list(loaded_graphemes), 'phoneme_symbols': list(loaded_phonemes), 'languages': list(all_langs)})
+        {'text_symbols': list(loaded_graphemes), 'phoneme_symbols': list(loaded_phonemes), 'languages': all_langs})
 
     # update logging and data directories
     log_dir = config_copy['paths']['checkpoint_dir']
@@ -126,19 +127,29 @@ def create_dp_config(master_config: dict, loaded_graphemes: set, loaded_phonemes
     config_copy['paths']['checkpoint_dir'] = os.path.join("experiments", exp, log_dir)
     config_copy['paths']['data_dir'] = os.path.join("experiments", exp, data_dir)
 
+    index = 0
+    for text_symbol in config_copy['preprocessing']['text_symbols']:
+        config_copy['preprocessing']['text_symbols'][index] = SingleQuotedScalarString(text_symbol)
+        index = index + 1
+
+    index = 0
+    for phoneme_symbol in config_copy['preprocessing']['phoneme_symbols']:
+        config_copy['preprocessing']['phoneme_symbols'][index] = SingleQuotedScalarString(phoneme_symbol)
+        index = index + 1
+
     return config_copy
 
 
-def get_all_langs(language_data: list[list[list[tuple[str, str, list[str]]] | str]]) -> set[str]:
+def get_all_langs(language_data: list[list[list[tuple[str, str, list[str]]] | str]]) -> list[str]:
     """
     Returns all unique languages from a list of languages and all its entries.
 
     :param language_data: Language list containing all languages and its entries as created from ``process_languages``.
     :return: Set of all unique languages.
     """
-    all_langs = set()
+    all_langs = []
     for language in language_data:
-        all_langs.update(language[1])
+        all_langs.append(language[1])
 
     return all_langs
 
@@ -225,12 +236,14 @@ if __name__ == '__main__':
     print(f"Creating experiment...")
     modified_config = create_dp_config(config_file, graphemes, phonemes, all_lang_names, exp_name)
 
-    yaml = YAML()
+    yaml = YAML(typ='rt')
     yaml.default_flow_style = None
     yaml.preserve_quotes = True
 
     with open(os.path.join(out_dir, "config.yaml"), 'w', encoding='utf-8') as f:
         yaml.dump(modified_config, f)
+
+    print(modified_config)
 
     print("Selecting validation data...")
     training_set, validation_set = create_dp_sets(languages, config_file)
