@@ -5,7 +5,12 @@ It is designed to aid in training g2p models that have many languages, graphemes
 
 ## installation
 
-Before cloning this repo, make sure you have deep-phonemizer and a relevant [pytorch](https://pytorch.org/get-started/locally/) distribution installed, preferably in a separate python environment.
+Before cloning this repo, make sure you have a relevant [pytorch](https://pytorch.org/get-started/locally/) distribution installed, preferably in a separate python environment.
+Otherwise, install python requirements normally. Please note that this script was written with pytorch 2.6.0 in mind.
+
+```text
+$ pip install -r requirements.txt
+```
 
 ## setup
 
